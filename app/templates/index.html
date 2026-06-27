@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% block title %}TruthCheck — Community Fact-Checking{% endblock %}
+{% block content %}
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-eyebrow">● Community-powered verification</div>
+    <h1 class="hero-title">
+      Can you trust<br>what you read?
+      <em> Find out together.</em>
+    </h1>
+    <p class="hero-sub">
+      Submit an article, get an instant AI credibility assessment,
+      then let the community vote on whether it's real or misleading.
+    </p>
+    {% if session.user_id %}
+      <div class="hero-actions">
+        <a href="{{ url_for('main.submit') }}" class="btn btn-amber">Submit an Article →</a>
+        <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline" style="color:#fff;border-color:rgba(255,255,255,.3)">My Activity</a>
+      </div>
+    {% else %}
+      <div class="hero-actions">
+        <a href="{{ url_for('auth.register') }}" class="btn btn-amber">Join the community</a>
+        <a href="{{ url_for('auth.login') }}" class="btn btn-outline" style="color:#fff;border-color:rgba(255,255,255,.3)">Sign in</a>
+      </div>
+    {% endif %}
+
+    <!-- Search bar -->
+    <form method="GET" action="{{ url_for('main.index') }}" style="margin-top:1.5rem;display:flex;gap:.5rem;max-width:480px;margin-left:auto;margin-right:auto">
+      <input type="text" name="q" value="{{ q or '' }}"
+             placeholder="Search articles by title or source…"
+             style="flex:1;padding:.65rem 1rem;border-radius:var(--r-sm);border:none;font-size:.95rem;outline:none;min-width:0">
+      <button type="submit" class="btn btn-amber" style="flex-shrink:0">Search</button>
+    </form>
+  </div>
+</section>
+
+<div class="container page">
+
+  <!-- STATS -->
+  {% if stats %}
+  <div class="stat-grid">
+    <div class="stat-card">
+      <div class="stat-num">{{ stats.total or 0 }}</div>
+      <div class="stat-lbl">Articles reviewed</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num c-danger">{{ stats.fake or 0 }}</div>
+      <div class="stat-lbl">Flagged misleading</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num c-safe">{{ stats.real or 0 }}</div>
+      <div class="stat-lbl">Verified credible</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num c-warn">{{ stats.pending or 0 }}</div>
+      <div class="stat-lbl">Awaiting votes</div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- HOW IT WORKS -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:2.5rem">
+    {% for step,desc in [
+      ('1. Submit','Paste an article or URL you want fact-checked'),
+      ('2. AI Analysis','Our system scores it for credibility signals instantly'),
+      ('3. Community Votes','Members vote and the final verdict is determined together')
+    ] %}
+    <div class="card card-sm" style="border-top:3px solid var(--amber)">
+      <div style="font-family:var(--display);font-weight:700;font-size:.9rem;margin-bottom:.35rem">{{ step }}</div>
+      <div style="font-size:.85rem;color:var(--muted)">{{ desc }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  <style>@media(max-width:600px){.how-grid{grid-template-columns:1fr!important}}</style>
+
+  <!-- FEED -->
+  <div class="section-label">
+    {% if q %}Results for "{{ q }}" — {{ articles|length }} found{% else %}Latest submissions{% endif %}
+  </div>
+  {% if q and not articles %}
+  <div class="empty">
+    <div class="empty-icon">🔍</div>
+    <div class="empty-title">No results for "{{ q }}"</div>
+    <div class="empty-sub">Try different keywords or <a href="{{ url_for('main.index') }}" style="color:var(--navy)">browse all articles</a>.</div>
+  </div>
+  {% endif %}
+
+  {% if articles %}
+  <div class="article-list">
+    {% for art in articles %}
+    <div class="article-row">
+      <div>
+        <a href="{{ url_for('main.article', article_id=art.id) }}" class="art-title">{{ art.title }}</a>
+        <div class="art-meta">
+          <span>by {{ art.submitter or 'anonymous' }}</span>
+          <span>{{ art.created_at[:10] if art.created_at else '' }}</span>
+          {% if art.source %}<span>{{ art.source }}</span>{% endif %}
+          <span>{{ art.vote_count }} vote{{ 's' if art.vote_count != 1 }}</span>
+        </div>
+        {% if art.vote_count > 0 %}
+        <div class="score-bar" style="max-width:220px;margin-top:.5rem">
+          <div class="score-bar-fill fill-danger" style="width:{{ (art.community_score*100)|int }}%"></div>
+        </div>
+        {% endif %}
+      </div>
+      <div class="art-badges">
+        <span class="badge badge-{{ art.final_verdict }}">{{ art.final_verdict }}</span>
+        <span class="badge badge-{{ art.nlp_label }}" style="opacity:.7">AI: {{ art.nlp_label.replace('_',' ') }}</span>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty">
+    <div class="empty-icon">📰</div>
+    <div class="empty-title">No articles submitted yet</div>
+    <div class="empty-sub">Be the first to submit something for review.</div>
+    {% if session.user_id %}
+    <a href="{{ url_for('main.submit') }}" class="btn btn-primary" style="margin-top:1rem">Submit an article</a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

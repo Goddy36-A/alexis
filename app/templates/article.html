@@ -1,0 +1,293 @@
+{% extends 'base.html' %}
+{% block title %}{{ art.title }} — TruthCheck{% endblock %}
+{% block content %}
+<div class="container page">
+
+  <div style="margin-bottom:1.25rem">
+    <a href="{{ url_for('main.index') }}" style="font-size:.85rem;color:var(--muted);display:inline-flex;align-items:center;gap:.3rem">
+      ← Back to feed
+    </a>
+  </div>
+
+  <div class="two-col">
+    <!-- LEFT MAIN -->
+    <div>
+
+      <!-- Article Header -->
+      <div style="margin-bottom:1.5rem">
+        <div style="display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:.85rem;align-items:center">
+          <span class="badge badge-{{ art.final_verdict }}" style="font-size:.8rem;padding:.3rem .8rem">
+            {% if art.final_verdict == 'fake' %}✗ Misleading
+            {% elif art.final_verdict == 'real' %}✓ Credible
+            {% else %}⚠ {{ art.final_verdict|title }}{% endif %}
+          </span>
+          <span class="badge badge-{{ art.nlp_label }}" style="opacity:.75;font-size:.8rem;padding:.3rem .8rem">
+            AI: {{ art.nlp_label.replace('_',' ')|title }}
+          </span>
+        </div>
+        <h1 style="font-family:var(--display);font-size:clamp(1.25rem,3.5vw,1.85rem);font-weight:800;line-height:1.25;color:var(--navy);margin-bottom:.65rem">
+          {{ art.title }}
+        </h1>
+        <div style="display:flex;flex-wrap:wrap;gap:.3rem .85rem;font-size:.8rem;color:var(--muted);align-items:center">
+          <span>Submitted by <strong style="color:var(--text)">{{ art.submitter or 'anonymous' }}</strong></span>
+          <span>{{ art.created_at[:10] if art.created_at else '' }}</span>
+          {% if art.source %}<span>Source: {{ art.source }}</span>{% endif %}
+          {% if art.url %}<a href="{{ art.url }}" target="_blank" style="color:var(--navy);font-weight:600">View original ↗</a>{% endif %}
+          {% if session.user_id and (session.user_id == art.submitted_by or session.role == 'admin') %}
+          <span style="margin-left:auto;display:flex;gap:.5rem">
+            <a href="{{ url_for('main.edit_article', article_id=art.id) }}"
+               class="btn btn-outline btn-sm">Edit</a>
+            <form method="POST" action="{{ url_for('main.delete_article', article_id=art.id) }}"
+                  onsubmit="return confirm('Delete this article? This cannot be undone.')">
+              <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+            </form>
+          </span>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Article content -->
+      <div class="card" style="margin-bottom:1.5rem;line-height:1.8;color:#1e293b;font-size:.95rem;white-space:pre-wrap">
+        {{ art.content }}
+      </div>
+
+      <!-- AI Prediction -->
+      <div class="section-label">AI Credibility Assessment</div>
+      <div class="card" style="margin-bottom:1.5rem">
+        <div style="display:flex;gap:1.5rem;align-items:center;flex-wrap:wrap">
+          <!-- Meter -->
+          <div class="meter-wrap">
+            {% set pct = (art.nlp_score * 100)|int %}
+            {% set r = 48 %}
+            {% set circ = 2 * 3.14159 * r %}
+            {% set offset = circ * (1 - art.nlp_score) %}
+            {% if art.nlp_score >= 0.6 %}{% set mcol = '#DC2626' %}
+            {% elif art.nlp_score >= 0.35 %}{% set mcol = '#D97706' %}
+            {% else %}{% set mcol = '#059669' %}{% endif %}
+            <div class="meter-container">
+              <svg class="meter-svg" width="120" height="120" viewBox="0 0 120 120">
+                <circle class="meter-track" cx="60" cy="60" r="{{ r }}"/>
+                <circle class="meter-fill"
+                  cx="60" cy="60" r="{{ r }}"
+                  stroke="{{ mcol }}"
+                  stroke-dasharray="{{ circ }}"
+                  stroke-dashoffset="{{ offset }}"/>
+              </svg>
+              <div class="meter-center">
+                <span class="meter-pct" style="color:{{ mcol }}">{{ pct }}%</span>
+                <span class="meter-sub">risk score</span>
+              </div>
+            </div>
+          </div>
+          <div style="flex:1;min-width:200px">
+            <div style="font-size:1.05rem;font-weight:700;margin-bottom:.4rem">
+              Prediction:
+              <span class="{% if art.nlp_score >= 0.6 %}text-danger{% elif art.nlp_score >= 0.35 %}text-warn{% else %}text-safe{% endif %}">
+                {% if art.nlp_score >= 0.6 %}Likely Misleading
+                {% elif art.nlp_score >= 0.35 %}Needs Verification
+                {% else %}Likely Credible{% endif %}
+              </span>
+            </div>
+            <div style="font-size:.88rem;color:var(--muted);margin-bottom:.85rem">
+              Confidence: <strong>{{ (100 - pct) if art.nlp_score < 0.5 else pct }}%</strong>
+              &nbsp;&nbsp;Label: <strong>{{ art.nlp_label.replace('_',' ')|title }}</strong>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;font-size:.8rem">
+              {% set features = [
+                ('Clickbait language','fill-danger'),
+                ('Source credibility','fill-safe'),
+                ('Hedge words','fill-warn'),
+                ('Verifiable quotes','fill-safe'),
+              ] %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Community Votes -->
+      <div class="section-label">Community Verdict ({{ art.vote_count }} vote{{ 's' if art.vote_count != 1 }})</div>
+
+      {% if vote_summary.total > 0 %}
+      <div class="card" style="margin-bottom:1.5rem">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin-bottom:1rem;text-align:center">
+          <div>
+            <div style="font-family:var(--display);font-size:1.6rem;font-weight:800;color:var(--danger)">{{ vote_summary.fake_pct }}%</div>
+            <div style="font-size:.75rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em">Misleading ({{ vote_summary.fake }})</div>
+          </div>
+          <div>
+            <div style="font-family:var(--display);font-size:1.6rem;font-weight:800;color:var(--safe)">{{ vote_summary.real_pct }}%</div>
+            <div style="font-size:.75rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em">Credible ({{ vote_summary.real }})</div>
+          </div>
+          <div>
+            <div style="font-family:var(--display);font-size:1.6rem;font-weight:800;color:var(--warn)">{{ vote_summary.unsure_pct }}%</div>
+            <div style="font-size:.75rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em">Uncertain ({{ vote_summary.unsure }})</div>
+          </div>
+        </div>
+        <div class="split-bar">
+          <div class="split-bar-seg" style="width:{{ vote_summary.fake_pct }}%;background:var(--danger)"></div>
+          <div class="split-bar-seg" style="width:{{ vote_summary.real_pct }}%;background:var(--safe)"></div>
+          <div class="split-bar-seg" style="width:{{ vote_summary.unsure_pct }}%;background:var(--warn)"></div>
+        </div>
+        <div style="font-size:.75rem;color:var(--muted);margin-top:.5rem">
+          Combined score (AI 70% + Community 30%):
+          <strong style="color:var(--text)">
+            {{ ((art.nlp_score * 0.7 + art.community_score * 0.3) * 100)|int }}% misleading risk
+          </strong>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Cast vote -->
+      {% if session.user_id %}
+      <div class="card" style="margin-bottom:1.5rem">
+        <div style="font-weight:700;font-size:.95rem;margin-bottom:1rem">
+          {% if user_vote %}Update your vote{% else %}Cast your vote{% endif %}
+        </div>
+        <form method="POST" action="{{ url_for('main.vote', article_id=art.id) }}">
+          <input type="hidden" name="vote" id="vote-input" value="{{ user_vote.vote if user_vote else '' }}">
+          <div class="vote-cards">
+            <div class="vote-card {% if user_vote and user_vote.vote=='fake' %}active-fake{% endif %}" data-vote="fake">
+              <span class="vc-icon">✗</span>
+              <span class="vc-label">Misleading</span>
+            </div>
+            <div class="vote-card {% if user_vote and user_vote.vote=='real' %}active-real{% endif %}" data-vote="real">
+              <span class="vc-icon">✓</span>
+              <span class="vc-label">Credible</span>
+            </div>
+            <div class="vote-card {% if user_vote and user_vote.vote=='unsure' %}active-unsure{% endif %}" data-vote="unsure">
+              <span class="vc-icon">⚠</span>
+              <span class="vc-label">Needs Review</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Confidence level — <span id="conf-val">{{ user_vote.confidence if user_vote else 3 }}/5</span></label>
+            <input type="range" name="confidence" min="1" max="5"
+                   value="{{ user_vote.confidence if user_vote else 3 }}"
+                   oninput="document.getElementById('conf-val').textContent=this.value+'/5'"
+                   style="width:100%;accent-color:var(--navy)">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Evidence or reason (optional)</label>
+            <input class="form-control" type="text" name="reason"
+                   placeholder="Share a source or explain your reasoning..."
+                   value="{{ user_vote.reason if user_vote else '' }}">
+          </div>
+          <button type="submit" class="btn btn-primary">Submit vote</button>
+        </form>
+      </div>
+      {% else %}
+      <div class="card" style="text-align:center;padding:2rem;margin-bottom:1.5rem">
+        <div style="font-weight:700;margin-bottom:.5rem">Have an opinion?</div>
+        <div style="font-size:.9rem;color:var(--muted);margin-bottom:1rem">Sign in to vote and help the community decide.</div>
+        <a href="{{ url_for('auth.login') }}" class="btn btn-primary">Sign in to vote</a>
+      </div>
+      {% endif %}
+
+      <!-- Expert Reviews -->
+      {% if expert_reviews %}
+      <div class="section-label">Expert Reviews</div>
+      {% for er in expert_reviews %}
+      <div class="expert-card">
+        <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.5rem;flex-wrap:wrap">
+          <span class="badge badge-{{ er.verdict }}">
+            {% if er.verdict=='fake' %}✗ Misleading{% elif er.verdict=='real' %}✓ Credible{% else %}⚠ {{ er.verdict|title }}{% endif %}
+          </span>
+          <span style="font-size:.8rem;color:var(--muted)">Expert review by <strong>{{ er.username }}</strong> · {{ er.created_at[:10] if er.created_at else '' }}</span>
+        </div>
+        <p style="font-size:.9rem;margin-bottom:.4rem">{{ er.explanation }}</p>
+        {% if er.evidence_links %}
+        <div style="font-size:.8rem;color:var(--muted)">Sources: {{ er.evidence_links }}</div>
+        {% endif %}
+      </div>
+      {% endfor %}
+      {% endif %}
+
+      {% if session.role in ('expert', 'admin') %}
+      <div class="section-label" style="margin-top:1.5rem">Submit Expert Review</div>
+      <div class="card" style="margin-bottom:1.5rem">
+        <form method="POST" action="{{ url_for('main.expert_review', article_id=art.id) }}">
+          <div class="form-group">
+            <label class="form-label">Verdict</label>
+            <select class="form-control" name="verdict">
+              <option value="fake">✗ Misleading</option>
+              <option value="real">✓ Credible</option>
+              <option value="misleading">⚠ Partially Misleading</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Explanation</label>
+            <textarea class="form-control" name="explanation" required placeholder="Provide a thorough fact-check explanation..."></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Evidence links</label>
+            <input class="form-control" type="text" name="evidence" placeholder="https://...">
+          </div>
+          <button type="submit" class="btn btn-primary">Publish expert review</button>
+        </form>
+      </div>
+      {% endif %}
+
+      <!-- Comments -->
+      <div class="section-label">Discussion ({{ comments|length }})</div>
+      <div class="card" style="margin-bottom:1rem">
+        {% if comments %}
+          {% for c in comments %}
+          <div class="comment">
+            <div class="comment-meta">
+              <span class="comment-avatar">{{ c.username[0].upper() }}</span>
+              <strong style="color:var(--text)">{{ c.username }}</strong>
+              <span>{{ c.created_at[:10] if c.created_at else '' }}</span>
+            </div>
+            <div class="comment-body">{{ c.content }}</div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div style="padding:1rem 0;text-align:center;color:var(--muted);font-size:.9rem">No comments yet. Be the first.</div>
+        {% endif %}
+      </div>
+      {% if session.user_id %}
+      <form method="POST" action="{{ url_for('main.comment', article_id=art.id) }}">
+        <div class="form-group">
+          <label class="form-label">Add a comment</label>
+          <textarea class="form-control" name="content" rows="3" placeholder="Share evidence, analysis, or context..."></textarea>
+        </div>
+        <button type="submit" class="btn btn-outline">Post comment</button>
+      </form>
+      {% endif %}
+    </div><!-- /main -->
+
+    <!-- SIDEBAR -->
+    <div class="sidebar-sticky">
+      <div class="card" style="margin-bottom:1rem">
+        <div class="section-label" style="margin-bottom:.85rem">Verdict summary</div>
+        <div style="display:flex;flex-direction:column;gap:.65rem">
+          {% for label,val in [
+            ('AI Risk Score', (art.nlp_score*100)|int|string + '%'),
+            ('AI Label', art.nlp_label.replace('_',' ')|title),
+            ('Community Score', (art.community_score*100)|int|string + '% misleading'),
+            ('Total votes', art.vote_count|string),
+            ('Final verdict', art.final_verdict|title),
+          ] %}
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:.88rem;padding-bottom:.55rem;border-bottom:1px solid var(--border)">
+            <span style="color:var(--muted)">{{ label }}</span>
+            <strong>{{ val }}</strong>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-label" style="margin-bottom:.75rem">How verdicts work</div>
+        <ul style="font-size:.82rem;color:var(--muted);display:flex;flex-direction:column;gap:.55rem">
+          <li style="display:flex;gap:.5rem"><span>🤖</span><span>AI analyses language signals instantly</span></li>
+          <li style="display:flex;gap:.5rem"><span>🗳</span><span>Community votes with confidence weights</span></li>
+          <li style="display:flex;gap:.5rem"><span>📊</span><span>Final = 70% AI + 30% community</span></li>
+          <li style="display:flex;gap:.5rem"><span>✓</span><span>3+ votes needed for community verdict</span></li>
+          <li style="display:flex;gap:.5rem"><span>🔍</span><span>Expert review overrides all scores</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

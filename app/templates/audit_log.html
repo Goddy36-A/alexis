@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% block title %}Audit Log — TruthCheck{% endblock %}
+{% block content %}
+<div class="container page">
+
+  <div style="margin-bottom:1.25rem">
+    <a href="{{ url_for('main.admin_panel') }}"
+       style="font-size:.85rem;color:var(--muted);display:inline-flex;align-items:center;gap:.3rem">
+      ← Back to admin
+    </a>
+  </div>
+
+  <div style="margin-bottom:2rem">
+    <div class="section-label">Administration</div>
+    <h1 style="font-family:var(--display);font-size:clamp(1.3rem,3.5vw,1.85rem);font-weight:800;color:var(--navy)">
+      Full Audit Log
+    </h1>
+    <p style="color:var(--muted);font-size:.9rem;margin-top:.4rem">
+      Complete record of all user actions on the platform. Most recent first.
+    </p>
+  </div>
+
+  <div class="card" style="padding:0;overflow:hidden">
+    <div style="overflow-x:auto">
+      <table class="lb-table" style="min-width:560px">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Timestamp</th>
+            <th>User</th>
+            <th>Action</th>
+            <th>Target</th>
+            <th>Detail</th>
+            <th>IP</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in logs %}
+          <tr>
+            <td style="color:var(--muted);font-size:.8rem">{{ log.id }}</td>
+            <td style="font-size:.78rem;color:var(--muted);white-space:nowrap">
+              {{ log.created_at[:16] if log.created_at else '' }}
+            </td>
+            <td style="font-weight:600;font-size:.85rem">{{ log.username or '—' }}</td>
+            <td><span class="chip">{{ log.action.replace('_',' ') }}</span></td>
+            <td style="font-size:.8rem;color:var(--muted)">
+              {% if log.target_type %}{{ log.target_type }} #{{ log.target_id }}{% else %}—{% endif %}
+            </td>
+            <td style="font-size:.82rem;color:var(--muted);max-width:220px;
+                        overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+              {{ log.detail or '—' }}
+            </td>
+            <td style="font-size:.78rem;color:var(--muted)">{{ log.ip_address or '—' }}</td>
+          </tr>
+          {% endfor %}
+          {% if not logs %}
+          <tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--muted)">No log entries yet.</td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

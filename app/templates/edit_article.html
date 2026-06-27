@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block title %}Edit Article — TruthCheck{% endblock %}
+{% block content %}
+<div class="container page" style="max-width:760px">
+
+  <div style="margin-bottom:1.25rem">
+    <a href="{{ url_for('main.article', article_id=art.id) }}"
+       style="font-size:.85rem;color:var(--muted);display:inline-flex;align-items:center;gap:.3rem">
+      ← Back to article
+    </a>
+  </div>
+
+  <div style="margin-bottom:2rem">
+    <div class="section-label">Editing</div>
+    <h1 style="font-family:var(--display);font-size:clamp(1.3rem,3.5vw,1.85rem);font-weight:800;color:var(--navy)">
+      Update submission
+    </h1>
+    <p style="color:var(--muted);font-size:.9rem;margin-top:.4rem">
+      Editing will re-run the credibility analysis and reset the verdict to pending.
+    </p>
+  </div>
+
+  <div class="card">
+    <form method="POST">
+      <div class="form-group">
+        <label class="form-label">Headline or title *</label>
+        <input class="form-control" type="text" name="title" required value="{{ art.title }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Full article content *</label>
+        <textarea class="form-control" name="content" required>{{ art.content }}</textarea>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+        <div class="form-group">
+          <label class="form-label">Source URL</label>
+          <input class="form-control" type="url" name="url" value="{{ art.url or '' }}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Publication name</label>
+          <input class="form-control" type="text" name="source" value="{{ art.source or '' }}">
+        </div>
+      </div>
+      <div style="display:flex;gap:.75rem;flex-wrap:wrap">
+        <button type="submit" class="btn btn-primary">Save &amp; re-analyse →</button>
+        <a href="{{ url_for('main.article', article_id=art.id) }}" class="btn btn-outline">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

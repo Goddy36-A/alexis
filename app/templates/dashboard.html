@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+{% block title %}My Activity — TruthCheck{% endblock %}
+{% block content %}
+<div class="container page">
+
+  <div style="margin-bottom:2rem">
+    <div class="section-label">Account</div>
+    <h1 style="font-family:var(--display);font-size:clamp(1.4rem,4vw,2rem);font-weight:800;color:var(--navy)">
+      Welcome back, {{ session.username }}
+    </h1>
+  </div>
+
+  <!-- Badges -->
+  {% if my_badges %}
+  <div style="margin-bottom:2rem">
+    <div class="section-label">Your badges</div>
+    <div style="display:flex;gap:.6rem;flex-wrap:wrap">
+      {% for b in my_badges %}
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:50px;
+                  padding:.35rem .9rem;font-size:.82rem;font-weight:600;color:var(--navy);
+                  box-shadow:var(--card-sh)">
+        🏅 {{ b.badge_name }}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Quick stats -->
+  <div class="stat-grid" style="margin-bottom:2rem">
+    <div class="stat-card">
+      <div class="stat-num">{{ my_articles|length }}</div>
+      <div class="stat-lbl">Articles submitted</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num c-safe">{{ my_votes|length }}</div>
+      <div class="stat-lbl">Votes cast</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">{{ my_badges|length }}</div>
+      <div class="stat-lbl">Badges earned</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num c-warn">{{ session.role|title }}</div>
+      <div class="stat-lbl">Account type</div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem">
+    <!-- My submissions -->
+    <div>
+      <div class="section-label">My submissions</div>
+      {% if my_articles %}
+      <div class="article-list">
+        {% for art in my_articles %}
+        <div class="article-row">
+          <div>
+            <a href="{{ url_for('main.article', article_id=art.id) }}" class="art-title" style="font-size:.9rem">
+              {{ art.title }}
+            </a>
+            <div class="art-meta">
+              <span>{{ art.created_at[:10] if art.created_at else '' }}</span>
+              <span>{{ art.vote_count }} votes</span>
+            </div>
+          </div>
+          <span class="badge badge-{{ art.final_verdict }}">{{ art.final_verdict }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty" style="padding:1.5rem 0">
+        <div class="empty-sub">No submissions yet.</div>
+        <a href="{{ url_for('main.submit') }}" class="btn btn-primary btn-sm" style="margin-top:.75rem">Submit an article</a>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- My votes -->
+    <div>
+      <div class="section-label">My votes</div>
+      {% if my_votes %}
+      <div class="article-list">
+        {% for v in my_votes %}
+        <div class="article-row">
+          <div>
+            <a href="{{ url_for('main.article', article_id=v.article_id) }}" class="art-title" style="font-size:.9rem">
+              {{ v.title }}
+            </a>
+            <div class="art-meta">
+              <span>{{ v.created_at[:10] if v.created_at else '' }}</span>
+              <span>Confidence {{ v.confidence }}/5</span>
+              {% if v.reason %}<span>{{ v.reason[:40] }}{% if v.reason|length > 40 %}…{% endif %}</span>{% endif %}
+            </div>
+          </div>
+          <span class="badge badge-{{ v.vote }}">{{ v.vote }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty" style="padding:1.5rem 0">
+        <div class="empty-sub">You haven't voted yet.</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+<style>@media(max-width:640px){.dash-grid{grid-template-columns:1fr!important}}</style>
+{% endblock %}

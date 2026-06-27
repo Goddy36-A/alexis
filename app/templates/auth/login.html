@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}Sign In — TruthCheck{% endblock %}
+{% block content %}
+<div style="min-height:80vh;display:flex;align-items:center;justify-content:center;padding:2rem 1.25rem">
+  <div style="width:100%;max-width:420px">
+
+    <div style="text-align:center;margin-bottom:2rem">
+      <div style="font-family:var(--display);font-size:1.75rem;font-weight:800;color:var(--navy);display:flex;align-items:center;justify-content:center;gap:.4rem">
+        <span style="color:var(--amber);font-size:2rem">●</span> TruthCheck
+      </div>
+      <p style="color:var(--muted);font-size:.9rem;margin-top:.4rem">Sign in to vote and submit articles</p>
+    </div>
+
+    <div class="card">
+      <h2 style="font-weight:700;font-size:1.1rem;margin-bottom:1.5rem;color:var(--navy)">Welcome back</h2>
+      <form method="POST">
+        <div class="form-group">
+          <label class="form-label">Username or email</label>
+          <input class="form-control" type="text" name="identifier" required autofocus
+                 placeholder="Enter your username or email">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input class="form-control" type="password" name="password" required
+                 placeholder="Your password">
+        </div>
+        <button type="submit" class="btn btn-primary btn-full" style="font-size:1rem;padding:.75rem">
+          Sign in →
+        </button>
+      </form>
+      <p style="margin-top:1.25rem;text-align:center;font-size:.875rem;color:var(--muted)">
+        New to TruthCheck?
+        <a href="{{ url_for('auth.register') }}" style="color:var(--navy);font-weight:700">Create a free account</a>
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block title %}Submit Article — TruthCheck{% endblock %}
+{% block content %}
+<div class="container page" style="max-width:760px">
+
+  <div style="margin-bottom:2rem">
+    <div class="section-label" style="margin-bottom:.5rem">Fact-checking</div>
+    <h1 style="font-family:var(--display);font-size:clamp(1.4rem,4vw,2rem);font-weight:800;color:var(--navy);margin-bottom:.5rem">
+      Submit an article for review
+    </h1>
+    <p style="color:var(--muted);font-size:.95rem">
+      Paste the headline and full text. Our system will assess it and open it for community voting.
+    </p>
+  </div>
+
+  <div class="card">
+    <form method="POST" action="{{ url_for('main.submit') }}">
+      <div class="form-group">
+        <label class="form-label">Headline or title *</label>
+        <input class="form-control" type="text" name="title" required
+               placeholder="Paste the article headline here...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Full article content *</label>
+        <textarea class="form-control" name="content" required
+                  placeholder="Paste the complete article text — more text means a more accurate assessment..."></textarea>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+        <div class="form-group">
+          <label class="form-label">Source URL (optional)</label>
+          <input class="form-control" type="url" name="url" placeholder="https://...">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Publication name</label>
+          <input class="form-control" type="text" name="source" placeholder="e.g. Daily Monitor">
+        </div>
+      </div>
+
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);padding:1rem;margin-bottom:1.25rem;font-size:.85rem;color:var(--muted)">
+        <strong style="color:var(--text)">What happens after you submit?</strong><br>
+        The system scores the article for credibility signals, then other members can vote on whether it is
+        credible or misleading. Once three or more people have voted, a community verdict is set.
+        Verified reviewers can override this with a sourced expert ruling.
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-full" style="font-size:1rem;padding:.8rem">
+        Analyse &amp; submit →
+      </button>
+    </form>
+  </div>
+</div>
+<style>@media(max-width:600px){.submit-grid{grid-template-columns:1fr!important}}</style>
+{% endblock %}
